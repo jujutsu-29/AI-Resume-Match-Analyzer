@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 
 try:
     from services.rag import chunk_and_store_text, similarity_search
+    from services.ats import analyze_resume_against_jd, rewrite_bullet_point
 except ImportError:
     pass # Will fail gracefully if not correctly set up
 
@@ -27,6 +28,14 @@ class SearchRequest(BaseModel):
     collection_name: str
     k: int = 5
     document_id: str = None
+
+class AnalysisRequest(BaseModel):
+    resume_text: str
+    jd_text: str
+
+class RewriteRequest(BaseModel):
+    bullet_point: str
+    jd_context: str = ""
 
 @app.get("/health", response_model=HealthCheck)
 def health_check():
@@ -78,6 +87,22 @@ async def search_documents(request: SearchRequest):
         return {"status": "success", "results": results}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error during search: {str(e)}")
+
+@app.post("/api/analyze")
+async def analyze_resume(request: AnalysisRequest):
+    try:
+        result = analyze_resume_against_jd(request.resume_text, request.jd_text)
+        return {"status": "success", "analysis": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error analyzing resume: {str(e)}")
+
+@app.post("/api/rewrite-bullet")
+async def rewrite_bullet(request: RewriteRequest):
+    try:
+        result = rewrite_bullet_point(request.bullet_point, request.jd_context)
+        return {"status": "success", "rewrites": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error rewriting bullet: {str(e)}")
 
 @app.get("/")
 def read_root():
