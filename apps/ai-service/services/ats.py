@@ -3,6 +3,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
 from pydantic import BaseModel, Field
 from typing import List
+from datetime import datetime
 
 # Define the structure we want the LLM to return
 class ATSAnalysisResult(BaseModel):

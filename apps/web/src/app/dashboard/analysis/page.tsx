@@ -54,8 +54,10 @@ export default function AnalysisResultPage() {
               Enhance Resume with AI
             </button>
             <button 
+              disabled
               onClick={() => window.print()}
-              className="px-6 py-3 rounded-xl glass-panel font-bold text-sm hover:bg-white/10 transition-colors"
+              className="px-6 py-3 rounded-xl glass-panel font-bold text-sm hover:bg-white/10 transition-colors opacity-50 cursor-not-allowed"
+              title="PDF Export is temporarily disabled"
             >
               Download PDF Report
             </button>

@@ -15,7 +15,16 @@ import {
 } from "lucide-react";
 import { AnalysisProvider } from "@/context/AnalysisContext";
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+import { createClient } from "@/utils/supabase/server";
+
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  // Create initials from email or default to 'U'
+  const email = user?.email || "";
+  const initials = email ? email.substring(0, 2).toUpperCase() : "U";
+
   return (
     <div className="min-h-screen bg-[var(--dark-bg)] text-white flex overflow-hidden">
       {/* Left Sidebar Navigation */}
@@ -40,6 +49,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <div className="p-4 border-t border-white/5">
           <NavItem href="#" icon={Settings} label="Settings" />
+          <form action="/auth/signout" method="post" className="w-full mt-2">
+            <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors font-medium text-sm">
+              Sign Out
+            </button>
+          </form>
         </div>
       </aside>
 
@@ -64,8 +78,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Bell className="w-5 h-5" />
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[var(--electric-blue)] rounded-full border border-[var(--dark-bg)]"></span>
             </button>
-            <button className="w-8 h-8 rounded-full bg-gradient-to-tr from-[var(--electric-blue)] to-purple-500 flex items-center justify-center text-sm font-bold">
-              JD
+            <button 
+              className="w-8 h-8 rounded-full bg-gradient-to-tr from-[var(--electric-blue)] to-purple-500 flex items-center justify-center text-sm font-bold"
+              title={email}
+            >
+              {initials}
             </button>
           </div>
         </header>

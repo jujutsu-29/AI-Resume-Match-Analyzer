@@ -5,10 +5,7 @@ from pypdf import PdfReader
 import io
 from dotenv import load_dotenv
 
-try:
-    from services.rag import chunk_and_store_text, similarity_search
-except ImportError:
-    pass # RAG needs PostgreSQL/psycopg2 which isn't installed yet
+from services.rag import chunk_and_store_text, similarity_search
 
 try:
     from services.ats import analyze_resume_against_jd, rewrite_bullet_point
@@ -35,12 +32,10 @@ class HealthCheck(BaseModel):
 class EmbedRequest(BaseModel):
     document_id: str
     text: str
-    collection_name: str
     metadata: dict = None
 
 class SearchRequest(BaseModel):
     query: str
-    collection_name: str
     k: int = 5
     document_id: str = None
 
@@ -81,7 +76,6 @@ async def embed_document(request: EmbedRequest):
         num_chunks = chunk_and_store_text(
             text=request.text, 
             document_id=request.document_id,
-            collection_name=request.collection_name,
             metadata=request.metadata
         )
         return {"status": "success", "chunks_embedded": num_chunks}
@@ -93,7 +87,6 @@ async def search_documents(request: SearchRequest):
     try:
         results = similarity_search(
             query=request.query,
-            collection_name=request.collection_name,
             k=request.k,
             document_id=request.document_id
         )
