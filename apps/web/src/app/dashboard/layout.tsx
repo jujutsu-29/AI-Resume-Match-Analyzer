@@ -39,7 +39,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </div>
         </div>
         <div className="flex-1 overflow-y-auto py-6 px-4 flex flex-col gap-2">
-          <NavItem href="/dashboard" icon={LayoutDashboard} label="Dashboard" />
           <NavItem href="/dashboard/upload" icon={UploadCloud} label="Upload Resume" />
           <NavItem href="/dashboard/analysis" icon={FileText} label="Analysis Results" />
           <NavItem href="/dashboard/job-match" icon={Target} label="Job Match" />
