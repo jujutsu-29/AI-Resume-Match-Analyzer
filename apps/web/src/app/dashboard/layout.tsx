@@ -13,6 +13,7 @@ import {
   User,
   Zap
 } from "lucide-react";
+import { AnalysisProvider } from "@/context/AnalysisContext";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -73,7 +74,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="flex-1 overflow-y-auto p-8 relative">
           {/* Subtle background glow for dashboard area */}
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[var(--electric-blue)]/5 rounded-full filter blur-[120px] pointer-events-none"></div>
-          {children}
+          <AnalysisProvider>
+            {children}
+          </AnalysisProvider>
         </div>
       </main>
     </div>

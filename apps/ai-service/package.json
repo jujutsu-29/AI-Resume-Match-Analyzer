@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "if not exist venv python -m venv venv && .\\venv\\Scripts\\pip install -r requirements.txt && .\\venv\\Scripts\\uvicorn main:app --reload --port 8000"
+    "predev": "if not exist venv (python -m venv venv)",
+    "dev": ".\\venv\\Scripts\\pip install -r requirements.txt && .\\venv\\Scripts\\uvicorn main:app --reload --port 8000"
   }
 }

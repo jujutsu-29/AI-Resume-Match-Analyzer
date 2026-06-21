@@ -1,18 +1,33 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from pydantic import BaseModel
 import os
-import fitz  # PyMuPDF
+from pypdf import PdfReader
+import io
 from dotenv import load_dotenv
 
 try:
     from services.rag import chunk_and_store_text, similarity_search
+except ImportError:
+    pass # RAG needs PostgreSQL/psycopg2 which isn't installed yet
+
+try:
     from services.ats import analyze_resume_against_jd, rewrite_bullet_point
 except ImportError:
-    pass # Will fail gracefully if not correctly set up
+    pass
+
+from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 
 app = FastAPI(title="AI Resume Analyzer API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class HealthCheck(BaseModel):
     status: str
@@ -48,12 +63,10 @@ async def extract_pdf(file: UploadFile = File(...)):
     
     try:
         contents = await file.read()
-        doc = fitz.open(stream=contents, filetype="pdf")
+        reader = PdfReader(io.BytesIO(contents))
         text = ""
-        for page in doc:
-            text += page.get_text()
-            
-        doc.close()
+        for page in reader.pages:
+            text += page.extract_text() or ""
         
         text = " ".join(text.split())
         

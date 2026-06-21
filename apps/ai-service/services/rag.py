@@ -7,8 +7,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # We expect GEMINI_API_KEY and DATABASE_URL in the environment
-embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash") # or preferred model
+embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
+llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash") # or preferred model
 
 CONNECTION_STRING = os.getenv("DATABASE_URL")
 

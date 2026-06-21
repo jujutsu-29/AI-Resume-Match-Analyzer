@@ -1,6 +1,6 @@
 import json
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate
 from pydantic import BaseModel, Field
 from typing import List
 
@@ -19,20 +19,23 @@ def analyze_resume_against_jd(resume_text: str, jd_text: str) -> dict:
     """Uses Gemini to analyze a resume against a job description."""
     
     # Initialize the LLM (make sure GEMINI_API_KEY is in your environment)
-    llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro", temperature=0.2)
+    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.2)
     
     # In newer LangChain versions, with_structured_output is preferred
     structured_llm = llm.with_structured_output(ATSAnalysisResult)
     
-    prompt_template = """
-    You are an expert technical recruiter and ATS system.
-    Analyze the following Resume against the provided Job Description.
+    current_date = datetime.now().strftime("%B %d, %Y")
+    
+    prompt_template = f"""
+    You are an expert ATS (Applicant Tracking System) and senior technical recruiter.
+    The current date is {current_date}. 
+    Analyze the provided resume against the provided job description.
     
     Job Description:
-    {jd_text}
+    {{jd_text}}
     
     Resume:
-    {resume_text}
+    {{resume_text}}
     
     Provide a detailed evaluation including ATS score, technical score, AI/ML score, 
     missing keywords, missing skills, strengths, weaknesses, and improvement suggestions.
@@ -56,7 +59,7 @@ def analyze_resume_against_jd(resume_text: str, jd_text: str) -> dict:
 def rewrite_bullet_point(bullet_point: str, jd_context: str = "") -> dict:
     """Rewrites a resume bullet point in 3 different styles."""
     
-    llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.5)
+    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.5)
     
     prompt_template = """
     You are an expert resume writer. Rewrite the following resume bullet point.
