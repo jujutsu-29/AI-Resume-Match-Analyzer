@@ -16,11 +16,16 @@ from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 
+frontend_url = os.getenv("FRONTEND_URL", "https://ai-resume-match-analyzer-web.vercel.app")
 app = FastAPI(title="AI Resume Analyzer API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=[
+        "http://localhost:3000", 
+        "http://127.0.0.1:3000", 
+        frontend_url
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
