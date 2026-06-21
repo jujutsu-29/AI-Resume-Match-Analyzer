@@ -85,7 +85,8 @@ export default function UploadPage() {
       const formData = new FormData();
       formData.append("file", file);
       
-      const extractRes = await fetch("http://127.0.0.1:8000/api/extract-pdf", {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+      const extractRes = await fetch(`${API_URL}/api/extract-pdf`, {
         method: "POST",
         body: formData,
       });
@@ -117,7 +118,8 @@ export default function UploadPage() {
     try {
       // Analyze Resume against JD
       setLoadingText("AI is analyzing your resume...");
-      const analyzeRes = await fetch("http://127.0.0.1:8000/api/analyze", {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+      const analyzeRes = await fetch(`${API_URL}/api/analyze`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -138,7 +140,8 @@ export default function UploadPage() {
       
       // Generate Vector Embeddings
       setLoadingText("Generating semantic embeddings...");
-      const embedRes = await fetch("http://127.0.0.1:8000/api/embed", {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+      const embedRes = await fetch(`${API_URL}/api/embed`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
