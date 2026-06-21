@@ -1,20 +1,32 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { GlassCard } from "@/components/ui/glass-card";
-import { UploadCloud, FileText, CheckCircle2, Target, AlertCircle } from "lucide-react";
+import { UploadCloud, FileText, CheckCircle2, Target, AlertCircle, History } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAnalysis } from "@/context/AnalysisContext";
+
+import { saveAnalysisResult, getUserResumes } from "./actions";
 
 export default function UploadPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadingText, setLoadingText] = useState("Analyzing Resume...");
   
+  // Existing Resumes State
+  const [existingResumes, setExistingResumes] = useState<any[]>([]);
+  const [selectedResumeId, setSelectedResumeId] = useState<string>("");
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { setResumeText, setJdText, setAnalysisResult, jdText } = useAnalysis();
   const router = useRouter();
+
+  useEffect(() => {
+    // Fetch resumes on mount
+    getUserResumes().then(resumes => setExistingResumes(resumes));
+  }, []);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -42,6 +54,18 @@ export default function UploadPage() {
     }
   };
 
+  const handleExistingResumeSubmit = async () => {
+    if (!selectedResumeId) {
+      setError("Please select an existing resume.");
+      return;
+    }
+    
+    const selectedResume = existingResumes.find(r => r.id.toString() === selectedResumeId);
+    if (!selectedResume) return;
+
+    await runAnalysis(selectedResume.content);
+  };
+
   const processFile = async (file: File) => {
     if (!jdText.trim()) {
       setError("Please paste a Job Description first so we can analyze the match.");
@@ -55,9 +79,9 @@ export default function UploadPage() {
 
     setError(null);
     setUploading(true);
+    setLoadingText("Extracting PDF text...");
     
     try {
-      // 1. Extract PDF
       const formData = new FormData();
       formData.append("file", file);
       
@@ -69,10 +93,30 @@ export default function UploadPage() {
       if (!extractRes.ok) throw new Error("Failed to extract text from PDF");
       const extractData = await extractRes.json();
       const extractedText = extractData.text;
+      const fileName = extractData.filename;
       
-      setResumeText(extractedText);
+      await runAnalysis(extractedText, fileName);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "An error occurred during extraction.");
+      setUploading(false);
+    }
+  };
 
-      // 2. Analyze Resume against JD
+  const runAnalysis = async (extractedText: string, fileName: string = "Existing Resume") => {
+    if (!jdText.trim()) {
+      setError("Please paste a Job Description first.");
+      setUploading(false);
+      return;
+    }
+
+    setError(null);
+    setUploading(true);
+    setResumeText(extractedText);
+
+    try {
+      // Analyze Resume against JD
+      setLoadingText("AI is analyzing your resume...");
       const analyzeRes = await fetch("http://127.0.0.1:8000/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -84,10 +128,28 @@ export default function UploadPage() {
 
       if (!analyzeRes.ok) throw new Error("Failed to analyze resume");
       const analyzeData = await analyzeRes.json();
+      const analysisObj = analyzeData.analysis;
       
-      setAnalysisResult(analyzeData.analysis);
+      setAnalysisResult(analysisObj);
+
+      // Save to Supabase securely via Server Action
+      setLoadingText("Saving results securely...");
+      const { resumeId } = await saveAnalysisResult(extractedText, analysisObj, fileName);
       
-      // 3. Navigate to results
+      // Generate Vector Embeddings
+      setLoadingText("Generating semantic embeddings...");
+      const embedRes = await fetch("http://127.0.0.1:8000/api/embed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          document_id: resumeId,
+          text: extractedText,
+          metadata: { source: "user_upload" }
+        }),
+      });
+
+      if (!embedRes.ok) console.warn("Failed to generate embeddings, but analysis was saved.");
+      
       router.push("/dashboard/analysis");
       
     } catch (err: any) {
@@ -126,44 +188,89 @@ export default function UploadPage() {
         ></textarea>
       </GlassCard>
 
-      {/* File Upload */}
-      <div 
-        className={`relative w-full rounded-3xl border-2 border-dashed flex flex-col items-center justify-center p-12 transition-all duration-300 min-h-[300px] ${
-          isDragging ? "border-[var(--electric-blue)] bg-[var(--electric-blue)]/10 scale-[1.02]" : "border-white/20 hover:border-white/40 hover:bg-white/5"
-        } ${uploading ? "opacity-80 pointer-events-none" : ""}`}
-        onDragEnter={handleDrag}
-        onDragLeave={handleDrag}
-        onDragOver={handleDrag}
-        onDrop={handleDrop}
-      >
-        <input 
-          type="file" 
-          accept=".pdf" 
-          className="hidden" 
-          ref={fileInputRef} 
-          onChange={handleFileSelect} 
-        />
-        
-        {uploading ? (
-          <div className="flex flex-col items-center gap-6">
-            <div className="w-16 h-16 border-4 border-white/20 border-t-[var(--electric-blue)] rounded-full animate-spin"></div>
-            <h3 className="text-2xl font-bold">Analyzing Resume...</h3>
-            <p className="text-gray-400">Our AI is parsing your experience and matching it against the JD.</p>
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* Existing Resume Selection */}
+        <GlassCard className="p-6 flex flex-col justify-between">
+          <div>
+            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <History className="w-5 h-5 text-purple-400" />
+              Use Existing Resume
+            </h3>
+            <p className="text-sm text-gray-400 mb-4">
+              Select a resume you've already uploaded to skip PDF extraction and get instant results.
+            </p>
+            
+            {existingResumes.length > 0 ? (
+              <select
+                className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl focus:outline-none focus:border-purple-400 text-white mb-6"
+                value={selectedResumeId}
+                onChange={(e) => setSelectedResumeId(e.target.value)}
+                disabled={uploading}
+              >
+                <option value="">-- Select a Resume --</option>
+                {existingResumes.map((r, idx) => (
+                  <option key={r.id} value={r.id}>
+                    {r.file_name || `Resume ${idx + 1}`} ({new Date(r.created_at).toLocaleDateString()})
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div className="p-4 bg-white/5 border border-white/10 rounded-xl text-sm text-gray-400 mb-6 text-center">
+                No existing resumes found. Upload a PDF first!
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="flex flex-col items-center gap-6 text-center cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[var(--electric-blue)]/20 to-[var(--emerald-green)]/20 flex items-center justify-center shadow-[0_0_40px_-10px_rgba(79,70,229,0.3)]">
-              <UploadCloud className="w-12 h-12 text-[var(--electric-blue)]" />
+          
+          <button 
+            onClick={handleExistingResumeSubmit}
+            disabled={uploading || !selectedResumeId || !jdText.trim()}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-500 to-[var(--electric-blue)] font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          >
+            Analyze Selected Resume
+          </button>
+        </GlassCard>
+
+        {/* File Upload */}
+        <div 
+          className={`relative w-full rounded-3xl border-2 border-dashed flex flex-col items-center justify-center p-8 transition-all duration-300 min-h-[300px] ${
+            isDragging ? "border-[var(--electric-blue)] bg-[var(--electric-blue)]/10 scale-[1.02]" : "border-white/20 hover:border-white/40 hover:bg-white/5"
+          } ${uploading ? "opacity-80 pointer-events-none" : ""}`}
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+        >
+          <input 
+            type="file" 
+            accept=".pdf" 
+            className="hidden" 
+            ref={fileInputRef} 
+            onChange={handleFileSelect} 
+          />
+          
+          {uploading ? (
+            <div className="flex flex-col items-center gap-6 text-center">
+              <div className="w-12 h-12 border-4 border-white/20 border-t-[var(--electric-blue)] rounded-full animate-spin"></div>
+              <div>
+                <h3 className="text-xl font-bold">{loadingText}</h3>
+                <p className="text-sm text-gray-400 mt-2">Processing your document securely.</p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-2xl font-bold mb-2">Step 2: Upload Resume</h3>
-              <p className="text-gray-400 mb-6">Drag & drop your PDF file here or click to browse</p>
-              <button className="px-8 py-3 rounded-full bg-gradient-primary font-bold shadow-lg hover:shadow-[0_0_30px_-10px_rgba(79,70,229,0.5)] transition-shadow">
-                Select PDF File
-              </button>
+          ) : (
+            <div className="flex flex-col items-center gap-4 text-center cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[var(--electric-blue)]/20 to-[var(--emerald-green)]/20 flex items-center justify-center shadow-[0_0_40px_-10px_rgba(79,70,229,0.3)]">
+                <UploadCloud className="w-10 h-10 text-[var(--electric-blue)]" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold mb-2">Upload New PDF</h3>
+                <p className="text-sm text-gray-400 mb-4">Drag & drop your file here</p>
+                <button className="px-6 py-2 rounded-full bg-white/10 font-medium hover:bg-white/20 transition-colors">
+                  Browse Files
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
       
       <div className="grid md:grid-cols-3 gap-6">
