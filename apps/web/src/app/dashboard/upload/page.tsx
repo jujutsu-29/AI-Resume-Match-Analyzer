@@ -140,7 +140,6 @@ export default function UploadPage() {
       
       // Generate Vector Embeddings
       setLoadingText("Generating semantic embeddings...");
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
       const embedRes = await fetch(`${API_URL}/api/embed`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
