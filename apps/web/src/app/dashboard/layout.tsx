@@ -44,7 +44,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <NavItem href="/dashboard/analysis" icon={FileText} label="Analysis Results" />
           <NavItem href="/dashboard/job-match" icon={Target} label="Job Match" />
           <NavItem href="/dashboard/chat" icon={Sparkles} label="Chat Assistant" />
-          <NavItem href="/dashboard/history" icon={History} label="History" />
+          <NavItem href="#" icon={History} label="History (Coming Soon)" disabled={true} />
         </div>
 
         <div className="p-4 border-t border-white/5">
@@ -100,8 +100,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
   );
 }
 
-function NavItem({ href, icon: Icon, label }: { href: string; icon: any; label: string }) {
+function NavItem({ href, icon: Icon, label, disabled }: { href: string; icon: any; label: string; disabled?: boolean }) {
   // In a real app we'd use usePathname to highlight the active link
+  if (disabled) {
+    return (
+      <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-500 cursor-not-allowed font-medium text-sm">
+        <Icon className="w-5 h-5 text-gray-600" />
+        {label}
+      </div>
+    );
+  }
+
   return (
     <Link href={href} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors group font-medium text-sm">
       <Icon className="w-5 h-5 group-hover:text-[var(--electric-blue)] transition-colors" />
