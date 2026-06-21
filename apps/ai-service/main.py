@@ -47,6 +47,11 @@ class RewriteRequest(BaseModel):
     bullet_point: str
     jd_context: str = ""
 
+class ChatRequest(BaseModel):
+    query: str
+    document_id: str
+    chat_history: list = []
+
 @app.get("/health", response_model=HealthCheck)
 def health_check():
     return {"status": "ok"}
@@ -109,6 +114,20 @@ async def rewrite_bullet(request: RewriteRequest):
         return {"status": "success", "rewrites": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error rewriting bullet: {str(e)}")
+
+from services.chat import get_chat_response
+
+@app.post("/api/chat")
+async def chat_with_resume(request: ChatRequest):
+    try:
+        response = get_chat_response(
+            query=request.query, 
+            document_id=request.document_id, 
+            chat_history=request.chat_history
+        )
+        return {"status": "success", "response": response}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error during chat: {str(e)}")
 
 @app.get("/")
 def read_root():

@@ -10,8 +10,11 @@ import {
   Settings,
   Bell,
   Search,
+  UploadCloud,
+  Target,
   User,
-  Zap
+  Zap,
+  Clock
 } from "lucide-react";
 import { AnalysisProvider } from "@/context/AnalysisContext";
 
@@ -35,16 +38,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <span className="text-xl font-bold">MatchAnalyzer</span>
           </div>
         </div>
-        
         <div className="flex-1 overflow-y-auto py-6 px-4 flex flex-col gap-2">
           <NavItem href="/dashboard" icon={LayoutDashboard} label="Dashboard" />
-          <NavItem href="/dashboard/upload" icon={FileText} label="Resume Upload" />
-          <NavItem href="/dashboard/analysis" icon={CheckSquare} label="Analysis Result" />
-          <NavItem href="/dashboard/job-match" icon={Zap} label="Job Match" />
-          <NavItem href="/dashboard/history" icon={History} label="Resume History" />
-          <div className="my-4 border-t border-white/5"></div>
-          <NavItem href="#" icon={Bookmark} label="Saved Reports" />
-          <NavItem href="#" icon={Sparkles} label="AI Suggestions" />
+          <NavItem href="/dashboard/upload" icon={UploadCloud} label="Upload Resume" />
+          <NavItem href="/dashboard/analysis" icon={FileText} label="Analysis Results" />
+          <NavItem href="/dashboard/job-match" icon={Target} label="Job Match" />
+          <NavItem href="/dashboard/chat" icon={Sparkles} label="Chat Assistant" />
+          <NavItem href="/dashboard/history" icon={History} label="History" />
         </div>
 
         <div className="p-4 border-t border-white/5">
